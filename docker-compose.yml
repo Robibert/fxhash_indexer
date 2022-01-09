@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  indexer:
+    build:
+        context: ./
+        dockerfile: ./Dockerfile
+        target: production
+
+    depends_on:
+      - hasura
+    restart: always
+
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - ADMIN_SECRET=${ADMIN_SECRET:-changeme}
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY:-}
+      - NOTIFIED_EMAILS=${NOTIFIED_EMAILS:-}
+      
+
+  indexer_db:
+    container_name: indexer_db
+    image: postgres:13
+    shm_size: 6g
+    expose: 
+      - 5432
+    restart: always
+    volumes:
+      - postgres-fxhash:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=fxhash
+      - POSTGRES_DB=fxhash
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  hasura:
+    image: hasura/graphql-engine:v2.0.1
+    ports:
+      - 8080:8080
+    expose:
+      - 8080
+    depends_on:
+      - indexer_db
+    restart: always
+    environment:
+      - HASURA_GRAPHQL_DATABASE_URL=postgres://fxhash:${POSTGRES_PASSWORD:-changeme}@indexer_db:5432/fxhash
+      - HASURA_GRAPHQL_ENABLE_CONSOLE=true
+      - HASURA_GRAPHQL_ENABLED_LOG_TYPES=startup, http-log, webhook-log, websocket-log, query-log
+      - HASURA_GRAPHQL_ADMIN_SECRET=${ADMIN_SECRET:-changeme}
+      - HASURA_GRAPHQL_UNAUTHORIZED_ROLE=user
+      - HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE=500
+
+
+
+volumes:
+  postgres-fxhash:
+
+    

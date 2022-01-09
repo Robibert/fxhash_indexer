@@ -1,0 +1,218 @@
+spec_version: 1.2
+package: fxhash_indexer
+
+database:
+  kind: postgres
+  host: indexer_db
+  port: 5432
+  user: ${POSTGRES_USER:-fxhash}
+  password: ${POSTGRES_PASSWORD:-changeme}
+  database: ${POSTGRES_DB:-fxhash}
+  schema_name: public
+
+
+
+
+hasura:
+  url: http://hasura:8080
+  admin_secret: ${ADMIN_SECRET:-changeme}
+
+
+contracts:
+  GENTK:
+    address: KT1KEa8z6vWXDJrVqtMrAeDVzsvxat3kHaCE
+    typename: gentk
+  GENTK_MARKETPLACE:
+    address: KT1Xo5B7PNBAeynZPmca4bRh6LQow4og1Zb9
+    typename: offer
+  GENTK_MINTER_V1:
+    address: KT1AEVuykWeuuFX7QkEAMNtffzwhe1Z98hJS
+    typename: gentk_minter_v1
+  GENTK_MINTER_V2:
+    address: KT1XCoGnfupWk7Sp8536EfrxcP73LmT68Nyr
+    typename: gentk_minter_v2
+  MODERATION:
+    address: KT1TWWQ6FtLoosVfZgTKV2q68TMZaENhGm54
+    typename: moderation
+
+datasources:
+  tzkt_mainnet:
+    kind: tzkt
+    url: https://api.tzkt.io
+
+
+indexes:
+  fxhash_mainnet:
+    kind: operation
+    datasource: tzkt_mainnet
+    types:
+      - transaction
+      - origination
+    contracts:
+      - GENTK
+      - GENTK_MARKETPLACE
+      - GENTK_MINTER_V1
+      - GENTK_MINTER_V2
+      - MODERATION
+    handlers:
+      
+      
+      ################
+      #Mint Issuer V1#
+      ###############
+      
+      
+      #buying (minting) objkt on primary
+      - callback: on_mint_v1
+        pattern:
+          - type: transaction
+            destination: GENTK_MINTER_V1
+            entrypoint: mint
+          - type: transaction
+            destination: GENTK
+            entrypoint: mint
+
+      #creating objkts for minting
+      - callback: on_mint_issuer_v1
+        pattern:
+          - type: transaction
+            destination: GENTK_MINTER_V1
+            entrypoint: mint_issuer
+
+      #Global pause of Minter
+      - callback: on_set_pause_v1
+        pattern:
+          - type: transaction
+            destination: GENTK_MINTER_V1
+            entrypoint: set_pause
+      # updating mint_issuer
+      - callback: on_update_issuer_v1
+        pattern:
+          - type: transaction
+            destination: GENTK_MINTER_V1
+            entrypoint: update_issuer
+
+      ################
+      #Mint Issuer V2#
+      ###############
+      
+      
+      #buying (minting) objkt on primary
+      - callback: on_mint_v2
+        pattern:
+          - type: transaction
+            destination: GENTK_MINTER_V2
+            entrypoint: mint
+          - type: transaction
+            destination: GENTK
+            entrypoint: mint
+
+      #creating objkts for minting
+      - callback: on_mint_issuer_v2
+        pattern:
+          - type: transaction
+            destination: GENTK_MINTER_V2
+            entrypoint: mint_issuer
+
+      #Global pause of Minter
+      - callback: on_set_pause_v2
+        pattern:
+          - type: transaction
+            destination: GENTK_MINTER_V2
+            entrypoint: set_pause
+      # updating mint_issuer
+      - callback: on_update_issuer_v2
+        pattern:
+          - type: transaction
+            destination: GENTK_MINTER_V2
+            entrypoint: update_issuer
+      #Set lock duration
+      - callback: on_set_lock_time
+        pattern:
+          - type: transaction
+            destination: GENTK_MINTER_V2
+            entrypoint: set_lock_time
+      #Set seed token
+      - callback: on_seed_token
+        pattern:
+          - type: transaction
+            destination: GENTK_MINTER_V2
+            entrypoint: seed_token
+
+      #############
+      # Moderation#
+      #############
+      - callback: moderate_on_add_moderator
+        pattern:
+          - type: transaction
+            destination: MODERATION
+            entrypoint: add_moderator
+
+      - callback: moderate_on_ban
+        pattern:
+          - type: transaction
+            destination: MODERATION
+            entrypoint: ban
+
+      - callback: moderate_on_moderate
+        pattern:
+          - type: transaction
+            destination: MODERATION
+            entrypoint: moderate
+
+      - callback: moderate_on_remove_moderator
+        pattern:
+          - type: transaction
+            destination: MODERATION
+            entrypoint: remove_moderator
+
+      - callback: moderate_on_update_admin
+        pattern:
+          - type: transaction
+            destination: MODERATION
+            entrypoint: update_admin
+
+
+      - callback: moderate_on_verify
+        pattern:
+          - type: transaction
+            destination: MODERATION
+            entrypoint: verify
+      #############
+      # GENTK     #
+      #############
+
+      
+      - callback: on_transfer
+        pattern:
+          - type: transaction
+            destination: GENTK
+            entrypoint: transfer
+
+
+      #############
+      #Marketplace#
+      #############
+      - callback: on_cancel_offer
+        pattern:
+          - type: transaction
+            destination: GENTK_MARKETPLACE
+            entrypoint: cancel_offer
+
+      - callback: on_collect
+        pattern:
+          - type: transaction
+            destination: GENTK_MARKETPLACE
+            entrypoint: collect
+
+      - callback: on_offer
+        pattern:
+          - type: transaction
+            destination: GENTK_MARKETPLACE
+            entrypoint: offer
+
+      - callback: on_update_enabled
+        pattern:
+          - type: transaction
+            destination: GENTK_MARKETPLACE
+            entrypoint: update_enabled
