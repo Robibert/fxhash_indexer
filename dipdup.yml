@@ -34,6 +34,17 @@ contracts:
   MODERATION:
     address: KT1TWWQ6FtLoosVfZgTKV2q68TMZaENhGm54
     typename: moderation
+  USER_REGISTRY:
+    address: KT1Ezht4PDKZri7aVppVGT4Jkw39sesaFnww
+    typename: user_registry
+
+  CYCLE_UPDATER:
+    address: KT1HvjUwFHoYpiEjeiaifFh9e2HmovLpahqK
+    typename: cycle_updater
+
+  CYCLE_ADDER:
+    address: KT1ELEyZuzGXYafD2Gar6iegZN1YdQR3n3f5
+    typename: cycle_adder
 
 datasources:
   tzkt_mainnet:
@@ -47,16 +58,58 @@ indexes:
     datasource: tzkt_mainnet
     types:
       - transaction
-      - origination
     contracts:
       - GENTK
       - GENTK_MARKETPLACE
       - GENTK_MINTER_V1
       - GENTK_MINTER_V2
       - MODERATION
+      - USER_REGISTRY
+      - CYCLE_ADDER
+      - CYCLE_UPDATER
     handlers:
+      #############
+      # CYCLE     #
+      #############
+
+      - callback: on_add_cycle
+        pattern:
+          - type: transaction
+            destination: CYCLE_ADDER
+            entrypoint: add_cycle
       
+      - callback: on_update_cycles
+        pattern:
+          - type: transaction
+            destination: CYCLE_UPDATER
+            entrypoint: update_cycles
+
+      #############
+      # GENTK     #
+      #############
+
+      - callback: on_assign_metadata
+        pattern:
+          - type: transaction
+            destination: GENTK
+            entrypoint: assign_metadata
       
+      - callback: on_transfer
+        pattern:
+          - type: transaction
+            destination: GENTK
+            entrypoint: transfer
+      
+      ################
+      #User Registry V1#
+      ###############
+      - callback: user_registry_on_update_profile
+        pattern:
+          - type: transaction
+            destination: USER_REGISTRY
+            entrypoint: update_profile
+
+
       ################
       #Mint Issuer V1#
       ###############
@@ -178,16 +231,6 @@ indexes:
           - type: transaction
             destination: MODERATION
             entrypoint: verify
-      #############
-      # GENTK     #
-      #############
-
-      
-      - callback: on_transfer
-        pattern:
-          - type: transaction
-            destination: GENTK
-            entrypoint: transfer
 
 
       #############

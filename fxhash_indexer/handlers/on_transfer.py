@@ -29,6 +29,8 @@ async def on_transfer(
             sender_holding.quantity -= int(tx.amount)  # type: ignore
             receiver_holding.quantity += int(tx.amount)  # type: ignore
             
+            token.timestamp=transfer.data.timestamp
+            token.level=transfer.data.level
             token.buyer=receiver
 
             await sender_holding.save()

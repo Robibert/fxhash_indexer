@@ -5,13 +5,13 @@ from dipdup.context import HandlerContext
 
 import fxhash_indexer.models as models
 
-from fxhash_indexer.types.gentk_minter.parameter.mint_issuer import MintIssuerParameter
-from fxhash_indexer.types.gentk_minter.storage import GentkMinterStorage
+from fxhash_indexer.types.gentk_minter_v2.parameter.mint_issuer import MintIssuerParameter
+from fxhash_indexer.types.gentk_minter_v2.storage import GentkMinterV2Storage
 from utils import fromhex
 
 async def on_mint_issuer_v2(
         ctx: HandlerContext,
-        mint_issuer: Transaction[MintIssuerParameter, GentkMinterStorage],
+        mint_issuer: Transaction[MintIssuerParameter, GentkMinterV2Storage],
     ) -> None:
     creator, _ = await models.Holder.get_or_create(address=mint_issuer.data.sender_address)
 

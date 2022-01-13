@@ -5,15 +5,16 @@ from dipdup.context import HandlerContext
 
 import fxhash_indexer.models as models
 
-from fxhash_indexer.types.gentk_minter.parameter.mint import MintParameter
-from fxhash_indexer.types.gentk_minter.storage import GentkMinterStorage
+from fxhash_indexer.types.gentk_minter_v2.parameter.mint import MintParameter
+from fxhash_indexer.types.gentk_minter_v2.storage import GentkMinterV2Storage   
 from fxhash_indexer.types.gentk.parameter.mint import MintParameter
 from fxhash_indexer.types.gentk.storage import GentkStorage
+from utils import fromhex
 
 
 async def on_mint_v2(
     ctx: HandlerContext,
-    mint_minter: Transaction[MintParameter, GentkMinterStorage],
+    mint_minter: Transaction[MintParameter, GentkMinterV2Storage],
     mint: Transaction[MintParameter, GentkStorage],
 ) -> None:
     buyer, _ = await models.Holder.get_or_create(address=mint_minter.data.sender_address)
@@ -29,6 +30,8 @@ async def on_mint_v2(
         ophash=mint.data.hash,
         level=mint.data.level,
         timestamp=mint.data.timestamp,
+        metadata=fromhex(mint.parameter.metadata[""])
+
     )
     await mint.save()
 
@@ -40,6 +43,7 @@ async def on_mint_v2(
         amount=1,
         level=mint.level,
         timestamp=mint.timestamp,
+        metadata=mint.metadata
 
     )
 
